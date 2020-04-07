@@ -1,0 +1,64 @@
+# 腾讯经典面试题 
+### Road-is-Long-Come
+
+第一次上GitHub，路漫漫其修远兮，希望能在数据这条道路上不断走下去。
+
+### 问题：
+#### 从1-20中取两个自然数，两数之和告诉A，两数之积告诉B，问A和B这两个数是多少。A首先说无法确定，B听后也说无法确定。A看B也无法确定，埋头算了一下，过了一会说我知道了。B听到A说知道了，埋头算了一下，说我也知道了。求这两个数分别是多少？
+
+### 解答：
+python3
+
+    import pandas as pd
+
+#### #先创建一个空的dataframe，设两数分别为x和y，且x<y。
+    df = pd.DataFrame(columns = ['x', 'y', '和', '积'])
+
+#### #1. 创建一个包含所有可能结果的dataframe。
+#### #2. 若sums=x+y，则sums的取值范围为3-39。让x在1-19中取值，y在2-20中取值，使得x+y落在[3，39]的区间内。
+    for sums in range(3, 40):
+        for x in range(1, 20):
+            for y in range(2, 21):
+                if x + y == sums and x < y:
+                    df_row = pd.DataFrame({'和': [A], 'x': [x], 'y': [y], '积': [x * y]})
+                    df = df.append(df_row, ignore_index = True)
+
+#### #创建一个函数。用以实现删除（False）或选出（True）“和”或“积”的值只出现过一次的所有结果。
+    def df_once(column_name, is_in = False):
+        global df
+        once = df[column_name].value_counts().to_frame()
+        once = once[once[column_name] == 1]
+    
+        if is_in == False:
+            df = df[~df[column_name].isin(once.index)]
+        elif is_in == True:
+            df = df[df[column_name].isin(once.index)]
+        else:
+            df = '警告：语法错误！'
+    
+        return df
+
+#### #1. A在知道“和”的情况下无法确定x和y。因此，x+y的值在【df】“和”这一列中至少出现过2次。
+#### #2. 删除（False）【df】中“和”的值只出现过1次的所有结果。
+    df_once('和')
+
+#### #1. B在知道A无法确定x和y的情况下，同样无法确定x和y。因此，x*y的值在【df】“积”这一列中至少出现过2次。
+#### #2. 删除（False）【df】中“积”的值只出现过1次的所有结果。
+    df_once('积')
+
+#### #1. A可以确定x和y，则在第二次处理后的【df】中，x+y的值必定是唯一的。
+#### #2. 选出（True）【df】中“和”的值只出现过1次的所有结果。
+    df_once('和', True)
+
+#### #1. B可以确定x和y，则在第三次处理后的【df】中，x*y的值必定是唯一的。
+#### #2. 选出（True）【df】中“积”的值只出现过1次的所有结果。
+    df_once('积', True)
+
+#### #最后打印出【df】，其中的x与y的所有组合即为解。
+    print(df)
+
+### 答案：
+          x   y   和    积
+    3     2   3   5    6
+    5     2   4   6    8
+    154   9  20  29  180
