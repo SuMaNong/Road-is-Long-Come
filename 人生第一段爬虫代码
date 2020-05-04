@@ -1,0 +1,58 @@
+今天写了人生第一段爬虫代码。爬取“豆瓣新片榜”上电影相关信息。
+
+import json
+import requests
+import re
+from requests.exceptions import RequestException
+from urllib.robotparser import RobotFileParser
+
+#查看网站是否允许爬取。
+def can_spyder(url):
+    index = url.index('.com') + 4
+    url_robot = url[:index] + '/robots.txt'
+    rp = RobotFileParser()
+    rp.set_url(url_robot)
+    rp.read()
+    return rp.can_fetch('*', url)
+
+#获取反馈。
+def get_one_page(url):
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/53736'
+        }
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.text
+        return None
+    except RequestException:
+        return None
+
+#爬取（转译）规则。
+def parse_one_page(html):
+    pattern = re.compile('<a.*?title="(.*?)".*?"pl">(\d{4}\D\d{2}\D\d{2})\((\D*?)\).*?</p>.*?"rating_nums">(.*?)</span>.*?\((\d*)\D', re.S)
+    items = re.findall(pattern, html)
+    for item in items:
+        yield {
+            '电影名': item[0],
+            '上映时间': item[1],
+            '地区': item[2],
+            '评分': item[3],
+            '评价人数': item[4]
+        }
+
+#创建文件。
+def write_to_file(content):
+    with open('result.txt', 'a', encoding='utf-8') as f:
+        f.write(json.dumps(content, ensure_ascii=False) + '\n')
+
+#执行程序。
+def main():
+    url = 'https://movie.douban.com/chart'
+    if can_spyder(url):
+        html = get_one_page(url)
+        for item in parse_one_page(html):
+            print(item)
+            write_to_file(item)
+ 
+main()
